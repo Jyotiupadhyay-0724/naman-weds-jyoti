@@ -1,60 +1,104 @@
 // api/submit.js
-// Simple Vercel serverless proxy that forwards POST to your Google Apps Script
-// and adds CORS headers so browser won't block the request.
+// Vercel serverless proxy: forwards POST to Google Apps Script and exposes
+// helpful debug info (logs, remote status + body). Replace endpoint as needed.
 
-const GOOGLE_SCRIPT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
+const DEFAULT_GOOGLE_SCRIPT_ENDPOINT =
+  process.env.GOOGLE_SCRIPT_ENDPOINT ||
+  'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
+
+const TIMEOUT_MS = 20000;
+
+// simple fetch with abort/timeout
+async function fetchWithTimeout(url, opts = {}, timeout = TIMEOUT_MS) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 module.exports = async (req, res) => {
-  // Allow CORS for your site (or use '*' if you want)
+  // very permissive CORS for debugging — restrict to your domain in production
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Forward body as JSON to Google Apps Script
-    const body = req.body && Object.keys(req.body).length ? req.body : await getRawBody(req);
+    // Read body — Vercel should parse JSON into req.body; fallback to raw
+    const body = (req.body && Object.keys(req.body).length) ? req.body : await getRawBody(req);
 
-    const resp = await fetch(GOOGLE_SCRIPT_ENDPOINT, {
+    // Log short preview for debugging (Vercel will show this in function logs)
+    try {
+      console.log('Proxy received body (preview):', JSON.stringify(body).slice(0, 2000));
+    } catch (e) {
+      console.log('Proxy received body (unserializable)', body);
+    }
+
+    const endpoint = DEFAULT_GOOGLE_SCRIPT_ENDPOINT;
+    console.log('Forwarding to Apps Script endpoint:', endpoint);
+
+    const resp = await fetchWithTimeout(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+      },
       body: JSON.stringify(body),
     });
 
-    const text = await resp.text();
-    // If script returns JSON, try to parse it
-    let parsed;
-    try { parsed = JSON.parse(text); } catch (_) { parsed = text; }
+    // Always read response text (Apps Script often returns text even for errors)
+    const rawText = await resp.text().catch((e) => {
+      console.warn('Failed to read resp.text():', e && e.message ? e.message : e);
+      return '';
+    });
 
-    // Forward status and body
-    res.status(resp.status >= 200 && resp.status < 400 ? 200 : 502).json({ ok: true, result: parsed });
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (e) {
+      parsed = rawText;
+    }
+
+    console.log('Apps Script returned status:', resp.status);
+    // Avoid logging very large bodies — show preview
+    console.log('Apps Script response preview:', (typeof parsed === 'string' ? parsed : JSON.stringify(parsed)).slice(0, 2000));
+
+    const forward = {
+      remoteStatus: resp.status,
+      ok: resp.ok,
+      result: parsed,
+      raw: rawText,
+    };
+
+    // If Apps Script returns non-2xx, forward 502 to front-end so it sees remote failure
+    return res.status(resp.ok ? 200 : 502).json(forward);
   } catch (err) {
-    console.error('Proxy error:', err);
-    res.status(500).json({ error: 'Proxy failed', details: err.message || String(err) });
+    console.error('Proxy error:', err && err.stack ? err.stack : err);
+    return res.status(500).json({ error: 'Proxy failed', details: (err && err.message) || String(err) });
   }
 };
 
-// helper: get raw body if Vercel/node didn't parse it
+// fallback parser for raw body
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
     req.setEncoding('utf8');
     req.on('data', (chunk) => (data += chunk));
     req.on('end', () => {
+      if (!data) return resolve({});
       try {
-        const parsed = data ? JSON.parse(data) : {};
-        resolve(parsed);
+        resolve(JSON.parse(data));
       } catch (e) {
-        // Not JSON - return raw string
-        resolve(data);
+        resolve(data); // return raw string if not JSON
       }
     });
     req.on('error', reject);
