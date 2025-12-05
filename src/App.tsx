@@ -15,21 +15,30 @@ import six from './assets/images/six.jpeg';
 import brideImg from './assets/images/bride.jpeg';
 import groom from './assets/images/groom.jpeg';
 
+// Local audio (you said you added wedding song into assets). Ensure file exists:
+import weddingSong from './assets/audio/wedding-song.mp3';
+
 /* ---------------- CONFIG ----------------
-  Set the deployed Google Apps Script Web App URL in a .env file:
+  Set the deployed Google Apps Script Web App URL in a .env file OR replace below constant:
   REACT_APP_GOOGLE_SCRIPT_ENDPOINT=https://script.google.com/macros/s/AKfycbx.../exec
 
   Restart dev server after creating/updating .env.
 ----------------------------------------- */
-const GOOGLE_SCRIPT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
+const GOOGLE_SCRIPT_ENDPOINT =
+  process.env.REACT_APP_GOOGLE_SCRIPT_ENDPOINT ||
+  'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
 
 // Map URLs
 const MAP_QUERY = encodeURIComponent('PC Chandra Garden Kolkata');
 const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${MAP_QUERY}`;
 const EMBED_URL = `https://www.google.com/maps?q=${MAP_QUERY}&output=embed`;
 
-// Audio placeholder (replace with your own wedding song URL)
-const AUDIO_SRC = 'https://gaana.com/song/mahiye-jinna-sohna';
+// Pandey's World (tilak) map
+const PANDEY_QUERY = encodeURIComponent("Pandey's World 7E Biren Roy Road Kolkata");
+const PANDEY_MAP_URL = `https://www.google.com/maps/search/?api=1&query=${PANDEY_QUERY}`;
+
+// Audio source - from local import
+const AUDIO_SRC = weddingSong;
 
 function App() {
   // load fonts similar to your screenshot (Great Vibes + Playfair Display)
@@ -39,8 +48,7 @@ function App() {
     link.rel = 'stylesheet';
     document.head.appendChild(link);
     return () => {
-      // keep fonts loaded for the session; optional cleanup if you want to remove:
-      // document.head.removeChild(link);
+      // optional cleanup if required
     };
   }, []);
 
@@ -391,6 +399,7 @@ function HeroSection() {
     audioRef.current = new Audio(AUDIO_SRC);
     audioRef.current.loop = true;
     audioRef.current.crossOrigin = 'anonymous';
+    audioRef.current.preload = 'auto';
 
     // cleanup on unmount
     return () => {
@@ -413,6 +422,7 @@ function HeroSection() {
       } catch (err) {
         // autoplay may be blocked; user must interact
         console.error('Audio play failed', err);
+        alert('Audio playback blocked by browser — click play again to allow.');
       }
     }
   };
@@ -458,6 +468,10 @@ interface EventCardProps {
   emoji: string;
 }
 function EventCard({ title, date, time, venue, dressCode, emoji }: EventCardProps) {
+  // if venue contains Pandey's World, show clickable link to Pandey map
+  const isPandey = venue?.toLowerCase().includes("pandey");
+  const venueLink = isPandey ? PANDEY_MAP_URL : MAP_URL;
+
   return (
     <div className="border-b border-gray-200 pb-8 w-full">
       <div className="grid md:grid-cols-3 gap-6 items-center text-center md:text-left">
@@ -475,7 +489,9 @@ function EventCard({ title, date, time, venue, dressCode, emoji }: EventCardProp
           </p>
           <p className="flex items-center justify-center md:justify-start gap-2">
             <span className="text-rose-900">📍</span>
-            <span>{venue}</span>
+            <a href={venueLink} target="_blank" rel="noreferrer" className="underline">
+              {venue}
+            </a>
           </p>
           <p className="flex items-center justify-center md:justify-start gap-2">
             <span className="text-rose-900">🎨</span>
@@ -666,11 +682,12 @@ function RSVPForm() {
         side,
         arrival,
         wishes: wishes.trim(),
+        // dynamic sheet name (Apps Script should read this and use appropriate sheet)
+        sheetName: process.env.REACT_APP_SHEET_NAME || 'Responses',
       };
 
-      // previously: fetch(GOOGLE_SCRIPT_ENDPOINT, { ... })
-      // For local testing we POST to /api — change if you use google script endpoint directly.
-      const res = await fetch('/api', {
+      // Use direct Apps Script endpoint (configured in GOOGLE_SCRIPT_ENDPOINT)
+      const res = await fetch(GOOGLE_SCRIPT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
