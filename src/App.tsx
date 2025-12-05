@@ -687,11 +687,12 @@ function RSVPForm() {
       };
 
       // Use direct Apps Script endpoint (configured in GOOGLE_SCRIPT_ENDPOINT)
-      const res = await fetch(GOOGLE_SCRIPT_ENDPOINT, {
+     const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      });
+    });
+
 
       if (!res.ok) {
         // Try to parse JSON error if available
