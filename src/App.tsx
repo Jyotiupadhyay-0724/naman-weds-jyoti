@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Heart, Images, MapPin, Clock, Mail, Briefcase, Menu, X } from 'lucide-react';
 
 // Local images: ensure these exist in src/assets/images/
@@ -23,8 +23,27 @@ import groom from './assets/images/groom.jpeg';
 ----------------------------------------- */
 const GOOGLE_SCRIPT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
 
+// Map URLs
+const MAP_QUERY = encodeURIComponent('PC Chandra Garden Kolkata');
+const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${MAP_QUERY}`;
+const EMBED_URL = `https://www.google.com/maps?q=${MAP_QUERY}&output=embed`;
+
+// Audio placeholder (replace with your own wedding song URL)
+const AUDIO_SRC = 'https://gaana.com/song/mahiye-jinna-sohna';
 
 function App() {
+  // load fonts similar to your screenshot (Great Vibes + Playfair Display)
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => {
+      // keep fonts loaded for the session; optional cleanup if you want to remove:
+      // document.head.removeChild(link);
+    };
+  }, []);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -66,13 +85,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 overflow-x-hidden">
+    <div className="min-h-screen bg-white text-gray-800 overflow-x-hidden" style={{ fontFamily: '"Playfair Display", serif' }}>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent">
         <div className="bg-white">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16 lg:h-20">
-              <h1 className="text-3xl lg:text-4xl font-bold text-rose-900" style={{ fontFamily: 'cursive' }}>
+              <h1 className="text-3xl lg:text-4xl font-bold text-rose-900" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
                  Naman & Jyoti
               </h1>
 
@@ -84,7 +103,7 @@ function App() {
                     ['couple', 'Meet the Couple'],
                     ['events', 'Events'],
                     ['moments', 'Memories'],
-                    ['rsvp', 'RSVP'],
+                    ['guest_wishes', 'Guest Wishes'],
                     ['venue', 'Venue'],
                   ].map(([id, label]) => (
                     <li key={id}>
@@ -105,10 +124,10 @@ function App() {
           {mobileMenuOpen && (
             <div className="lg:hidden bg-white border-t border-gray-200">
               <ul className="flex flex-col space-y-4 p-4">
-                {['home', 'wedding', 'couple', 'events', 'moments', 'rsvp', 'venue'].map((id) => (
+                {['home', 'wedding', 'couple', 'events', 'moments', 'guest_wishes', 'venue'].map((id) => (
                   <li key={id}>
                     <button onClick={() => scrollToSection(id)} className="text-gray-700 hover:text-rose-900 transition-colors font-medium w-full text-left">
-                      {id.charAt(0).toUpperCase() + id.slice(1)}
+                      {id === 'guest_wishes' ? 'Guest Wishes' : id.charAt(0).toUpperCase() + id.slice(1)}
                     </button>
                   </li>
                 ))}
@@ -119,28 +138,7 @@ function App() {
       </header>
 
       {/* Hero */}
-      <section
-        id="home"
-        className="relative flex min-h-screen items-end justify-center bg-cover bg-center p-20 mt-16 lg:mt-20"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${together})`,
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/30" />
-
-        <button className="fixed left-4 top-28 md:top-32 lg:top-36 transform -translate-y-1/2 bg-white text-rose-900 rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shadow-lg z-20">
-          ▶
-        </button>
-
-        <div className="absolute top-10 md:top-18 lg:top-22 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-20 space-y-4">
-          <img src={ganesha} alt="Ganesha" className="w-16 h-16 rounded-full object-cover" />
-          <p className="text-white text-center text-xs md:text-sm lg:text-base leading-relaxed drop-shadow-lg italic">
-            वक्रतुण्ड महाकाय, सूर्यकोटि समप्रभाः । <br />
-            निर्विघ्नं कुरु मे देव, सर्वकार्येषु सर्वदा॥
-          </p>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Wedding hero */}
       <div id="wedding" className="flex items-center justify-center w-full">
@@ -149,10 +147,10 @@ function App() {
             <div className="absolute inset-0 bg-cover bg-center blur-sm scale-105" style={{ backgroundImage: `url(${background})` }} />
             <div className="absolute inset-0 bg-white/40" />
             <div className="relative z-10 max-w-4xl mx-auto">
-              <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-gray-800 mb-4" style={{ fontFamily: 'serif' }}>
+              <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-gray-800 mb-4" style={{ fontFamily: '"Playfair Display", serif' }}>
                 Wedding Celebration of
               </h1>
-              <h2 className="text-5xl md:text-7xl text-rose-900 font-bold" style={{ fontFamily: 'cursive' }}>
+              <h2 className="text-5xl md:text-7xl text-rose-900 font-bold" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
                 Naman & Jyoti
               </h2>
             </div>
@@ -163,7 +161,7 @@ function App() {
             <br />
             <strong className="text-rose-900">Jyoti</strong> and <strong className="text-rose-900">Naman</strong> on
             <br />
-            <strong className="text-xl" style={{ fontFamily: 'cursive' }}>
+            <strong className="text-xl" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
               Tuesday, February 10, 2026
             </strong>
           </p>
@@ -177,7 +175,7 @@ function App() {
             <img src={brideImg} alt="Jyoti Upadhyay" className="w-full h-full object-cover" />
           </div>
           <div className="gap-2 flex flex-col text-center items-center justify-center">
-            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'cursive' }}>
+            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
               The Bride
             </h1>
             <Heart className="text-red-900" size={20} fill="currentColor" />
@@ -191,7 +189,7 @@ function App() {
             <img src={groom} alt="Naman Pandey" className="w-full h-full object-cover" />
           </div>
           <div className="gap-2 flex flex-col text-center items-center justify-center">
-            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'cursive' }}>
+            <h1 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
               The Groom
             </h1>
             <Heart className="text-red-900" size={20} fill="currentColor" />
@@ -208,13 +206,13 @@ function App() {
           <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl mx-auto">
             <div className="flex flex-col lg:flex-row">
               <div className="lg:w-1/2 p-8 md:p-12 text-center lg:text-left flex flex-col justify-center">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'serif' }}>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2" style={{ fontFamily: '"Playfair Display", serif' }}>
                   Countdown to the
                 </h1>
-                <h2 className="text-3xl font-semibold text-rose-900 mb-4" style={{ fontFamily: 'cursive' }}>
+                <h2 className="text-3xl font-semibold text-rose-900 mb-4" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
                   Wedding
                 </h2>
-                <p className="text-2xl text-gray-700" style={{ fontFamily: 'cursive' }}>
+                <p className="text-2xl text-gray-700" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
                   Tuesday, February 10, 2026
                 </p>
               </div>
@@ -247,7 +245,7 @@ function App() {
       <div id="events" className="my-16">
         <div className="flex items-center justify-center p-8 w-full">
           <div className="md:w-1/2 text-center">
-            <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-gray-800 mb-4" style={{ fontFamily: 'serif' }}>
+            <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-gray-800 mb-4" style={{ fontFamily: '"Playfair Display", serif' }}>
               The Wedding Events
             </h1>
             <p className="text-md text-gray-700 font-semibold">🌸 Uniting hearts, families, and dreams in one beautiful moment.</p>
@@ -256,7 +254,7 @@ function App() {
         <div className="border-b border-gray-200 w-full mb-8" />
 
         <div className="flex flex-col items-center justify-center space-y-8 max-w-5xl mx-auto px-4">
-          <EventCard title="The Tilak Ceremony" date="Thursday, February 6, 2026" time="To be announced" venue="To be announced" dressCode="Traditional attire" emoji="🙏" />
+          <EventCard title="The Tilak Ceremony" date="Thursday, February 6, 2026" time="To be announced" venue="Pandey's World, 7E, Biren Roy Road E, Jadu Colony, Sarada Pally, Kolkata, West Bengal 700034" dressCode="Traditional attire" emoji="🙏" />
           <EventCard title="Sangeet & Engagement" date="Saturday, February 8, 2026" time="07:00 PM onwards" venue="The Park Hotel" dressCode="Festive & Glamorous" emoji="💃" />
           <EventCard title="The Mehendi Affair" date="Sunday, February 9, 2026" time="03:00 PM onwards" venue="PC Chandra Garden" dressCode="Henna hues" emoji="🎨" />
           <EventCard title="Turmeric Tales (Haldi)" date="Sunday, February 9, 2026" time="11:00 AM onwards" venue="PC Chandra Garden" dressCode="Dipped in sunshine (Yellow)" emoji="🌼" />
@@ -272,10 +270,10 @@ function App() {
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center gap-8 justify-center">
             <div className="md:w-1/2 text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'serif' }}>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-2" style={{ fontFamily: '"Playfair Display", serif' }}>
                 Our lovely
               </h1>
-              <h1 className="text-3xl font-semibold text-rose-900 mb-8" style={{ fontFamily: 'cursive' }}>
+              <h1 className="text-3xl font-semibold text-rose-900 mb-8" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
                 Memories
               </h1>
 
@@ -292,15 +290,15 @@ function App() {
         </div>
       </div>
 
-      {/* RSVP */}
-      <div id="rsvp" className="my-16">
+      {/* Guest Wishes (formerly RSVP) */}
+      <div id="guest_wishes" className="my-16">
         <div className="flex items-center justify-center p-8 w-full">
           <div className="md:w-1/2 text-center">
-            <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-rose-900 mb-4" style={{ fontFamily: 'serif' }}>
-              Send us your Confirmation
+            <h1 className="text-4xl md:text-5xl tracking-wider font-bold text-rose-900 mb-4" style={{ fontFamily: '"Playfair Display", serif' }}>
+              Guest Wishes
             </h1>
             <p className="text-lg text-gray-700">
-              <strong style={{ fontFamily: 'cursive' }}>We look forward to celebrating with you!</strong>
+              <strong style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>We look forward to celebrating with you!</strong>
             </p>
           </div>
         </div>
@@ -315,11 +313,11 @@ function App() {
         <div className="container mx-auto py-8 md:py-10 px-4">
           <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
             <div className="md:w-1/2 text-center md:text-left">
-              <h1 className="text-4xl md:text-5xl font-bold text-rose-900 mb-4" style={{ fontFamily: 'serif' }}>
+              <h1 className="text-4xl md:text-5xl font-bold text-rose-900 mb-4" style={{ fontFamily: '"Playfair Display", serif' }}>
                 Wedding Venue
               </h1>
               <h2 className="text-xl font-semibold text-gray-800 mb-4">📌 PC Chandra Garden</h2>
-              <a href="https://maps.google.com/?q=PC+Chandra+Garden" target="_blank" rel="noopener noreferrer" className="inline-block bg-rose-900 px-6 py-3 text-sm font-semibold text-white hover:bg-rose-700 transition-colors rounded">
+              <a href={MAP_URL} target="_blank" rel="noopener noreferrer" className="inline-block bg-rose-900 px-6 py-3 text-sm font-semibold text-white hover:bg-rose-700 transition-colors rounded">
                 <div className="flex items-center gap-2">
                   <span>OPEN IN GOOGLE MAPS</span>
                   <MapPin size={20} />
@@ -327,30 +325,26 @@ function App() {
               </a>
             </div>
             <div className="md:w-1/2">
-              <div className="w-full h-80 bg-gray-200 rounded-lg shadow-lg flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MapPin size={48} className="mx-auto mb-2" />
-                  <p>Map will load here</p>
-                </div>
-              </div>
+              {/* MapEmbed */}
+              <MapEmbed />
             </div>
           </div>
 
           <div className="container mx-auto py-16 px-4 bg-rose-50 rounded-lg shadow-md my-8">
             <div className="text-center md:text-left max-w-3xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6" style={{ fontFamily: 'serif' }}>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6" style={{ fontFamily: '"Playfair Display", serif' }}>
                 Invitees
               </h1>
               <div className="space-y-6">
                 <div className="font-semibold text-xl">
-                  <p className="text-rose-800 mb-2" style={{ fontFamily: 'cursive' }}>The Upadhyay Family</p>
+                  <p className="text-rose-800 mb-2" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>The Upadhyay Family</p>
                   <a href="tel:+919269573129" className="text-lg text-gray-700 hover:underline flex items-center justify-center md:justify-start gap-2">
                     <span>📞</span>
                     <span>+91 9269573129</span>
                   </a>
                 </div>
                 <div className="font-semibold text-xl">
-                  <p className="text-rose-800 mb-2" style={{ fontFamily: 'cursive' }}>The Pandey Family</p>
+                  <p className="text-rose-800 mb-2" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>The Pandey Family</p>
                   <a href="tel:+919831216414" className="text-lg text-gray-700 hover:underline flex items-center justify-center md:justify-start gap-2">
                     <span>📞</span>
                     <span>+91 9831216414</span>
@@ -387,6 +381,73 @@ function App() {
   );
 }
 
+/* ---------- Hero with audio player ---------- */
+function HeroSection() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    // create audio element once
+    audioRef.current = new Audio(AUDIO_SRC);
+    audioRef.current.loop = true;
+    audioRef.current.crossOrigin = 'anonymous';
+
+    // cleanup on unmount
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+    if (playing) {
+      audioRef.current.pause();
+      setPlaying(false);
+    } else {
+      try {
+        await audioRef.current.play();
+        setPlaying(true);
+      } catch (err) {
+        // autoplay may be blocked; user must interact
+        console.error('Audio play failed', err);
+      }
+    }
+  };
+
+  return (
+    <section
+      id="home"
+      className="relative flex min-h-screen items-end justify-center bg-cover bg-center p-20 mt-16 lg:mt-20"
+      style={{
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${together})`,
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/30" />
+
+      {/* audio play button */}
+      <button
+        onClick={togglePlay}
+        aria-label={playing ? 'Pause music' : 'Play music'}
+        className="fixed left-4 top-28 md:top-32 lg:top-36 transform -translate-y-1/2 bg-white text-rose-900 rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center shadow-lg z-20"
+      >
+        <span style={{ fontSize: 18, fontWeight: 700 }}>{playing ? '⏸' : '▶'}</span>
+      </button>
+
+      <div className="absolute top-10 md:top-18 lg:top-22 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-20 space-y-4">
+        <img src={ganesha} alt="Ganesha" className="w-16 h-16 rounded-full object-cover" />
+        <p className="text-white text-center text-xs md:text-sm lg:text-base leading-relaxed drop-shadow-lg italic" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
+          वक्रतुण्ड महाकाय, सूर्यकोटि समप्रभाः । <br />
+          निर्विघ्नं कुरु मे देव, सर्वकार्येषु सर्वदा॥
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* EventCard component */
 interface EventCardProps {
   title: string;
@@ -401,7 +462,7 @@ function EventCard({ title, date, time, venue, dressCode, emoji }: EventCardProp
     <div className="border-b border-gray-200 pb-8 w-full">
       <div className="grid md:grid-cols-3 gap-6 items-center text-center md:text-left">
         <div className="md:col-span-2 flex flex-col justify-center space-y-3 px-4 md:px-0">
-          <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 capitalize" style={{ fontFamily: 'cursive' }}>
+          <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-2 capitalize" style={{ fontFamily: 'Great Vibes, "Playfair Display", serif' }}>
             {title}
           </h3>
           <p className="flex items-center justify-center md:justify-start gap-2">
@@ -607,13 +668,13 @@ function RSVPForm() {
         wishes: wishes.trim(),
       };
 
-    // previously: fetch(GOOGLE_SCRIPT_ENDPOINT, { ... })
-    const res = await fetch('/api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
+      // previously: fetch(GOOGLE_SCRIPT_ENDPOINT, { ... })
+      // For local testing we POST to /api — change if you use google script endpoint directly.
+      const res = await fetch('/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) {
         // Try to parse JSON error if available
@@ -691,6 +752,28 @@ function RSVPForm() {
         {loading ? 'Submitting...' : 'Confirm Attendance'}
       </button>
     </form>
+  );
+}
+
+/* MapEmbed component - clicking the map opens Google Maps in a new tab */
+function MapEmbed() {
+  return (
+    <a
+      href={MAP_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Open PC Chandra Garden in Google Maps (opens in new tab)"
+      className="block w-full h-80 rounded-lg shadow-lg overflow-hidden"
+      title="Open in Google Maps"
+    >
+      <iframe
+        title="PC Chandra Garden - Kolkata"
+        src={EMBED_URL}
+        className="w-full h-80 border-0"
+        allowFullScreen
+        loading="lazy"
+      />
+    </a>
   );
 }
 
