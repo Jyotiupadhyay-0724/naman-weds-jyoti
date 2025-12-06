@@ -2,9 +2,7 @@
 // Vercel serverless proxy: forwards POST to Google Apps Script and exposes
 // helpful debug info (logs, remote status + body). Replace endpoint as needed.
 
-const DEFAULT_GOOGLE_SCRIPT_ENDPOINT =
-  process.env.GOOGLE_SCRIPT_ENDPOINT ||
-  'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
+const DEFAULT_GOOGLE_SCRIPT_ENDPOINT =  'https://script.google.com/macros/s/AKfycbyJtiv8nxS8IwqkZaRCDAtTuYhVGD0YGlT53IieHU7UZH7EFyGldhqvj9GIgP_QHNZi/exec';
 
 const TIMEOUT_MS = 20000;
 
