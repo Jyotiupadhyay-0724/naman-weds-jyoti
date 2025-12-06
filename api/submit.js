@@ -1,9 +1,7 @@
 // api/submit.js - simplified, robust proxy for Vercel
 // Note: set GOOGLE_SCRIPT_ENDPOINT env var in Vercel, or it falls back to DEFAULT.
 
-const DEFAULT_GOOGLE_SCRIPT_ENDPOINT =
-  process.env.GOOGLE_SCRIPT_ENDPOINT ||
-  'https://script.google.com/macros/s/AKfycbyJtiv8nxS8IwqkZaRCDAtTuYhVGD0YGlT53IieHU7UZH7EFyGldhqvj9GIgP_QHNZi/exec';
+const DEFAULT_GOOGLE_SCRIPT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyJtiv8nxS8IwqkZaRCDAtTuYhVGD0YGlT53IieHU7UZH7EFyGldhqvj9GIgP_QHNZi/exec';
 
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
