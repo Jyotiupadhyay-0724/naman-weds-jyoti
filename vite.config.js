@@ -7,8 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       // forward /api -> your Apps Script endpoint
-      '/api': {
-        target: 'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec',
+      '/api/submit': {
+        target: 'https://script.google.com/macros/s/AKfycbyJtiv8nxS8IwqkZaRCDAtTuYhVGD0YGlT53IieHU7UZH7EFyGldhqvj9GIgP_QHNZi/exec',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''), // optional: strips /api prefix
       },
