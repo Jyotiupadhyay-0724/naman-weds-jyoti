@@ -262,10 +262,10 @@ function App() {
         <div className="border-b border-gray-200 w-full mb-8" />
 
         <div className="flex flex-col items-center justify-center space-y-8 max-w-5xl mx-auto px-4">
-          <EventCard title="The Tilak Ceremony" date="Thursday, February 6, 2026" time="To be announced" venue="Pandey's World, 7E, Biren Roy Road E, Jadu Colony, Sarada Pally, Kolkata, West Bengal 700034" dressCode="Traditional attire" emoji="🙏" />
-          <EventCard title="Sangeet & Engagement" date="Saturday, February 8, 2026" time="07:00 PM onwards" venue="The Park Hotel" dressCode="Festive & Glamorous" emoji="💃" />
-          <EventCard title="The Mehendi Affair" date="Sunday, February 9, 2026" time="03:00 PM onwards" venue="PC Chandra Garden" dressCode="Henna hues" emoji="🎨" />
-          <EventCard title="Turmeric Tales (Haldi)" date="Sunday, February 9, 2026" time="11:00 AM onwards" venue="PC Chandra Garden" dressCode="Dipped in sunshine (Yellow)" emoji="🌼" />
+          <EventCard title="The Tilak Ceremony" date="Friday, February 6, 2026" time="To be announced" venue="Pandey's World, 7E, Biren Roy Road E, Jadu Colony, Sarada Pally, Kolkata, West Bengal 700034" dressCode="Traditional attire" emoji="🙏" />
+          <EventCard title="Sangeet & Engagement" date="Sunday, February 8, 2026" time="07:00 PM onwards" venue="The Park Hotel" dressCode="Festive & Glamorous" emoji="💃" />
+          <EventCard title="The Mehendi Affair" date="Monday, February 9, 2026" time="03:00 PM onwards" venue="PC Chandra Garden" dressCode="Henna hues" emoji="🎨" />
+          <EventCard title="Turmeric Tales (Haldi)" date="Monday, February 9, 2026" time="11:00 AM onwards" venue="PC Chandra Garden" dressCode="Dipped in sunshine (Yellow)" emoji="🌼" />
           <EventCard title="The Wedding Ceremony" date="Tuesday, February 10, 2026" time="Evening onwards" venue="PC Chandra Garden" dressCode="Traditional / Indo-Western" emoji="💒" />
           <EventCard title="The Reception" date="Tuesday, February 10, 2026" time="Evening onwards" venue="PC Chandra Garden" dressCode="Formal & Elegant" emoji="🎊" />
         </div>
