@@ -19,14 +19,13 @@ import groom from './assets/images/groom.jpeg';
 import weddingSong from './assets/audio/wedding-song.mp3';
 
 /* ---------------- CONFIG ----------------
-  Set the deployed Google Apps Script Web App URL in a .env file OR replace below constant:
-  REACT_APP_GOOGLE_SCRIPT_ENDPOINT=https://script.google.com/macros/s/AKfycbx.../exec
-
-  Restart dev server after creating/updating .env.
+  Replace APPS_SCRIPT_EXEC with your deployed Apps Script exec URL.
+  Confirm Apps Script Web App deploy settings:
+    - Execute as: Me (script owner)
+    - Who has access: Anyone, even anonymous
 ----------------------------------------- */
-const GOOGLE_SCRIPT_ENDPOINT =
-  process.env.REACT_APP_GOOGLE_SCRIPT_ENDPOINT ||
-  'https://script.google.com/macros/s/AKfycbx2fGHQY8r4agQVxpHB7iQaC9HcFWJcMEdZmEWFRDOleHwR252cR6LEv0MZzxk1sP-D/exec';
+const APPS_SCRIPT_EXEC =
+  'https://script.google.com/macros/s/AKfycbyJtiv8nxS8IwqkZaRCDAtTuYhVGD0YGlT53IieHU7UZH7EFyGldhqvj9GIgP_QHNZi/exec';
 
 // Map URLs
 const MAP_QUERY = encodeURIComponent('PC Chandra Garden Kolkata');
@@ -622,7 +621,7 @@ function GalleryModal({ images, startIndex = 0, onClose }: { images: string[]; s
   );
 }
 
-/* ----------------- RSVPForm (controlled + sends to Google Script) ----------------- */
+/* ----------------- RSVPForm (controlled + posts to Apps Script via hidden form/iframe) ----------------- */
 function RSVPForm() {
   const attendingOptions = ['I will Attend', 'I will Not Attend', 'I am Not Sure Yet!'];
   const sideOptions = [
@@ -654,6 +653,59 @@ function RSVPForm() {
     return null;
   };
 
+  // helper: post via hidden form + iframe to avoid CORS preflight
+  const submitToAppsScriptViaForm = (payload: Record<string, any>, endpoint: string): Promise<{ ok: boolean }> => {
+    return new Promise((resolve) => {
+      // ensure hidden iframe exists
+      let iframe = document.getElementById('gs-submit-iframe') as HTMLIFrameElement | null;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.name = 'gs-submit-iframe';
+        iframe.id = 'gs-submit-iframe';
+        document.body.appendChild(iframe);
+      }
+
+      // create temporary form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = endpoint;
+      form.target = iframe.name;
+      form.style.display = 'none';
+
+      // append inputs for each payload key
+      Object.keys(payload).forEach((key) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        const v = payload[key];
+        input.value = typeof v === 'string' ? v : JSON.stringify(v);
+        form.appendChild(input);
+      });
+
+      // listen for iframe load; when it fires, assume submission reached Apps Script
+      const onLoad = () => {
+        setTimeout(() => {
+          iframe!.removeEventListener('load', onLoad);
+          if (document.body.contains(form)) form.remove();
+          resolve({ ok: true });
+        }, 400);
+      };
+
+      iframe.addEventListener('load', onLoad);
+
+      document.body.appendChild(form);
+      form.submit();
+
+      // safety fallback in case load never fires
+      setTimeout(() => {
+        if (iframe) iframe.removeEventListener('load', onLoad);
+        if (document.body.contains(form)) form.remove();
+        resolve({ ok: true });
+      }, 5000);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -682,37 +734,27 @@ function RSVPForm() {
         side,
         arrival,
         wishes: wishes.trim(),
-        // dynamic sheet name (Apps Script should read this and use appropriate sheet)
-        sheetName: process.env.REACT_APP_SHEET_NAME || 'Responses',
+        sheetName: 'Responses',
       };
 
-      // Use direct Apps Script endpoint (configured in GOOGLE_SCRIPT_ENDPOINT)
-     const res = await fetch('/api/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-    });
+      // Use direct Apps Script exec URL (form POST avoids CORS)
+      const result = await submitToAppsScriptViaForm(payload, APPS_SCRIPT_EXEC);
 
-
-      if (!res.ok) {
-        // Try to parse JSON error if available
-        const text = await res.text();
-        console.error('Submission error:', res.status, text);
-        throw new Error('Submission failed');
+      if (result.ok) {
+        setMessage('Thank you! Your confirmation has been received.');
+        // clear form
+        setName('');
+        setPhone('');
+        setAttending('');
+        setGuests('');
+        setSide('');
+        setArrival('');
+        setWishes('');
+      } else {
+        setMessage('Something went wrong. Please try again or contact us directly.');
       }
-
-      // Success
-      setMessage('Thank you! Your confirmation has been received.');
-      // clear form
-      setName('');
-      setPhone('');
-      setAttending('');
-      setGuests('');
-      setSide('');
-      setArrival('');
-      setWishes('');
     } catch (err) {
-      console.error(err);
+      console.error('Submission error:', err);
       setMessage('Something went wrong. Please try again or contact us directly.');
     } finally {
       setLoading(false);
